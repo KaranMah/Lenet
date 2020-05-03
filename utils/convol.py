@@ -1,81 +1,48 @@
 import numpy as np
-import scipy.signal
+from utils.util import *
 
-class Convolution:
+class Convol2d:
 
-    def __init__(self, num_filters, kernel_size, padding, stride, name):
-        self.F = num_filters[1]
-        self.C = num_filters[0]
-        self.K = kernel_size
-
-        self.weights = np.zeros((self.F, self.C, self.K, self.K))
-        self.bias = np.zeros((self.F, 1))
-        for i in range(0, self.F):
-            self.weights[i, :, :, :] = np.random.normal(loc=0, scale=np.sqrt(1. / (self.C * self.K * self.K)),
-                                                        size=(self.C, self.K, self.K))
-        self.p = padding
-        self.s = stride
+    def __init__(self, layer_size, kernel_size, name):
+        self.depth, self.height, self.width = layer_size
+        self.weights = np.random.uniform(-0.1, 0.1, kernel_size)
+        self.bias = np.random.uniform(-0.1, 0.1, kernel_size[0])
+        self.bias = np.mat(self.bias).T
         self.name = name
 
+    def forward(self, X):
+        # self.cache = self.Weights, self.bias
+        n_filters, d_filter, h_filter, w_filter = self.weights.shape
+        n_x, d_x, h_x, w_x = X.shape
+        h_out = (h_x - h_filter) + 1
+        w_out = (w_x - w_filter) + 1
+
+        X_col = im2col_indices(X, h_filter, w_filter)
+        W_col = self.weights.reshape(n_filters, -1)
+        temp = W_col @ X_col
+        self.out = temp + self.bias
+        self.out = np.array(self.out).reshape(n_x, n_filters, h_out, w_out)
+        self.cache = (X, self.weights, self.bias, X_col)
+
+        return self.out
 
 
-    def forward(self, inputs):
-
-        C = inputs.shape[0]
-        D = inputs.shape[1]
-        W = inputs.shape[2] + 2 * self.p
-        H = inputs.shape[3] + 2 * self.p
-
-        self.inputs = inputs
-        WW = int((W - self.K)/self.s) + 1
-        HH = int((H - self.K)/self.s) + 1
-        feature_maps = np.zeros((C, self.F, WW, HH))
-
-        weights_rot = np.rot90(self.weights, 2, (2, 3))
-        for img in range(C):
-            for conv_depth in range(self.F):
-                for inp_depth in range(D):
-                    feature_maps[img, conv_depth] += scipy.signal.convolve2d(inputs[img, inp_depth],
-                                                                                 weights_rot[conv_depth, inp_depth],
-                                                                                 mode='valid')
-                feature_maps[img, conv_depth] += self.bias[conv_depth]
-
-        return feature_maps
 
     def backward(self, dy, lr):
+        X, W, b, X_col = self.cache
+        n_filter, d_filter, h_filter, w_filter = W.shape
 
-        N, C, W, H = self.inputs.shape
-        dx = np.zeros(self.inputs.shape)
-        dw = np.zeros(self.weights.shape)
-        db = np.zeros(self.bias.shape)
-        print(dx.shape)
+        db = np.sum(dy, axis=(0, 2, 3))
+        db = db.reshape(n_filter, -1)
 
-        conv_h = (H - self.K ) // self.s + 1
-        conv_w = (W - self.K) // self.s + 1
+        dy_reshaped = dy.transpose(1, 2, 3, 0).reshape(n_filter, -1)
+        dW = dy_reshaped @ X_col.T
+        dW = dW.reshape(W.shape)
 
-        N, F, W, H = dy.shape
-        for img in range(N):
-            for f in range(F):
-                for w in range(W-self.K+1):
-                    for h in range(H-self.K+1):
-                        dx[img,:,w:w+self.K,h:h+self.K] += dy[img,f,w,h]*self.weights[img,:,w:w+self.K,h:h+self.K]
-
-        for img in range(N):
-            for kernel_num in range(F):
-                for h in range(conv_h):
-                    for w in range(conv_w):
-                        dw[kernel_num, :, :, :] += dy[img, kernel_num, h, w] * self.inputs[img, :,
-                                                                                            h:h + self.K,
-                                                                                            w:w + self.K]
-
-        self.db = np.sum(dy, (0, 2, 3))
-        self.weights -= lr * dw
+        W_reshape = W.reshape(n_filter, -1)
+        dX_col = W_reshape.T @ dy_reshaped
+        dX = col2im_indices(dX_col, X.shape, h_filter, w_filter)
+        self.weights -= lr * dW
         self.bias -= lr * db
-        return dx
+        return dX
 
-    def extract(self):
-        return {self.name+'.weights':self.weights, self.name+'.bias':self.bias}
-
-    def feed(self, weights, bias):
-        self.weights = weights
-        self.bias = bias

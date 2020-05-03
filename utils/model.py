@@ -1,4 +1,4 @@
-# from utils.convol import Convolution
+from utils.convol import Convol2d
 # from utils.maxpool import Maxpooling
 # from utils.fully_connected import FullyConnected
 # from utils.ReLU import ReLu
@@ -26,14 +26,14 @@ class LeNet5(object):
         # self.layers.append(ReLu(name='ReLu'))
         # self.layers.append(FullyConnected(num_inputs=84, num_outputs=10, name='fc7'))
         # self.layers.append(Softmax())
-        self.layers.append(Convolution(layer_size=(6, 28, 28), kernel_size=(6, 1, 5, 5), name="conv1"))
+        self.layers.append(Convol2d(layer_size=(6, 28, 28), kernel_size=(6, 1, 5, 5), name="conv1"))
         self.layers.append(Maxpooling(size=2, stride=2, name="maxpool2"))
         self.layers.append(ReLu(name='ReLu'))
 
-        self.layers.append(Convolution(layer_size=(16, 10, 10), kernel_size=(16, 6, 5, 5), name="conv3"))
+        self.layers.append(Convol2d(layer_size=(16, 10, 10), kernel_size=(16, 6, 5, 5), name="conv3"))
         self.layers.append(Maxpooling(size=2, stride=2, name="maxpool4"))
         self.layers.append(ReLu(name='ReLu'))
-        self.layers.append(Convolution(layer_size=(120, 1, 1), kernel_size=(120, 16, 5, 5), name="conv5"))
+        self.layers.append(Convol2d(layer_size=(120, 1, 1), kernel_size=(120, 16, 5, 5), name="conv5"))
         self.layers.append(ReLu(name='ReLu'))
         self.layers.append(FullyConnected(layer_size=120 * 84,kernel_size=(120, 84),name="fc6"))
         self.layers.append(ReLu(name='ReLu'))
@@ -49,6 +49,7 @@ class LeNet5(object):
             batch_image = batch_image.reshape(N,D,H,W)
             for layer in self.layers:
                 batch_image = layer.forward(batch_image)
+                # print(layer.name, batch_image.shape)
             self.final = batch_image
             return cross_entropy(batch_image, batch_label)
         else:
@@ -61,6 +62,8 @@ class LeNet5(object):
         training_data = self.final
         for layer in rev_layers:
             training_data = layer.backward(training_data, lr)
+            # print(layer.name, training_data.shape)
+
         self.final = training_data
         return
 
