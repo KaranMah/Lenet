@@ -1,4 +1,4 @@
-from utils.convol import Convol2d
+from utils.convol_2 import Convol2d
 # from utils.maxpool import Maxpooling
 # from utils.fully_connected import FullyConnected
 # from utils.ReLU import ReLu
