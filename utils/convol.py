@@ -48,6 +48,7 @@ class Convolution:
         dx = np.zeros(self.inputs.shape)
         dw = np.zeros(self.weights.shape)
         db = np.zeros(self.bias.shape)
+        print(dx.shape)
 
         conv_h = (H - self.K ) // self.s + 1
         conv_w = (W - self.K) // self.s + 1
