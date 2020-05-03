@@ -47,26 +47,20 @@ class LeNet5(object):
         if mode == "train":
             N,W,H,D =(batch_image.shape)
             batch_image = batch_image.reshape(N,D,H,W)
-            print(" forward start", datetime.now())
             for layer in self.layers:
                 batch_image = layer.forward(batch_image)
-            print("forward end", datetime.now())
             self.final = batch_image
             return cross_entropy(batch_image, batch_label)
         else:
             for layer in self.layers:
                 batch_image = layer.forward(batch_image)
-                # print(layer.name, batch_image.size)
             return batch_image
 
     def Back_Propagation(self, lr):
         rev_layers = reversed(self.layers)
         training_data = self.final
-        print("backprop start", datetime.now())
         for layer in rev_layers:
             training_data = layer.backward(training_data, lr)
-            # print(layer.name, training_data.shape)
-        print("backprop end", datetime.now())
         self.final = training_data
         return
 
