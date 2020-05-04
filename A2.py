@@ -121,10 +121,6 @@ def train(model, train_data, test_data, num_epoch, lr_global_list, batch_size):
 
         # loop over each batch
         ste = time.time()
-        i=0
-        # print(train_data[0].shape)
-        print(train_data[0][int((i/6)*len(train_data[0])):int((i+1)/6*len(train_data[0]))].shape,
-              train_data[1][int((i/6)*len(train_data[0])):int((i+1)/6*len(train_data[0]))].shape)
         cost = 0
         mini_batches = random_mini_batches(train_data[0], train_data[1], batch_size)
         print('Training: ')
@@ -139,17 +135,15 @@ def train(model, train_data, test_data, num_epoch, lr_global_list, batch_size):
         # For your implementation
         error01_train = 0
         error01_test = 0
-        for i in range(6):
-            print(train_data[0][int((i / 6) * len(train_data[0])):int(((i + 1) / 6) * len(train_data[0]))].shape,
-                  train_data[1][int((i / 6) * len(train_data[0])):int(((i + 1) / 6) * len(train_data[0]))].shape)
+        for i in range(10):
             error1_train, _ = model.Forward_Propagation(
-                train_data[0][int((i / 6) * len(train_data[0])):int((i + 1) / 6*len(train_data[0]))],
-                train_data[1][int((i / 6) * len(train_data[0])):int((i + 1) / 6*len(train_data[0]))], 'test')
+                train_data[0][int((i / 10) * len(train_data[0])):int((i + 1) / 10*len(train_data[0]))],
+                train_data[1][int((i / 10) * len(train_data[0])):int((i + 1) / 10*len(train_data[0]))], 'test')
             error01_train += error1_train
         for i in range(6):
             error1_test, _ = model.Forward_Propagation(
-                test_data[0][int((i / 6) * len(test_data[0])):int(((i + 1) / 6) * len(test_data[0]))],
-                test_data[1][int((i / 6) * len(test_data[0])):int(((i + 1) / 6)* len(test_data[0]))], 'test')
+                test_data[0][int((i / 10) * len(test_data[0])):int(((i + 1) / 10) * len(test_data[0]))],
+                test_data[1][int((i / 10) * len(test_data[0])):int(((i + 1) / 10)* len(test_data[0]))], 'test')
             error01_test += error1_test
         err_rate_list.append([error01_train/60000, error01_test/10000])
         print("0/1 error of testing set: ", error01_test, "/", len(test_data[1]))
