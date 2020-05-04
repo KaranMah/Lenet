@@ -56,6 +56,7 @@ class LeNet5(object):
             return cross_entropy(batch_image, batch_label)
         else:
             N, W, H, D = (batch_image.shape)
+            print(batch_image.size)
             batch_image = batch_image.reshape(N, D, H, W)
             for layer in self.layers:
                 batch_image = layer.forward(batch_image)
