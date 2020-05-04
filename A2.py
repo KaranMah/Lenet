@@ -140,6 +140,8 @@ def train(model, train_data, test_data, num_epoch, lr_global_list, batch_size):
         error01_train = 0
         error01_test = 0
         for i in range(6):
+            print(train_data[0][int((i / 6) * len(train_data[0])):int((i + 1) / 6 * len(train_data[0]))].shape,
+                  train_data[1][int((i / 6) * len(train_data[0])):int((i + 1) / 6 * len(train_data[0]))].shape)
             error1_train, _ = model.Forward_Propagation(
                 train_data[0][int((i/6)*len(train_data[0])):int((i+1)*len(train_data[0]))],
                 train_data[1][int((i/6)*len(train_data[0])):int((i+1)*len(train_data[0]))], 'test')
