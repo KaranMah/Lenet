@@ -139,10 +139,11 @@ def train(model, train_data, test_data, num_epoch, lr_global_list, batch_size):
             error1_train, _ = model.Forward_Propagation(
                 train_data[0][i*len(train_data[0]):(i+1)*len(train_data[0])],
                 train_data[1][i*len(train_data[0]):(i+1)*len(train_data[0])], 'test')
+            error01_train += error1_train
+        for i in range(6):
             error1_test, _ = model.Forward_Propagation(
                 train_data[0][i * len(test_data[0]):(i + 1) * len(test_data[0])],
                 train_data[1][i * len(test_data[0]):(i + 1) * len(test_data[0])], 'test')
-            error01_train += error1_train
             error01_test += error1_test
         err_rate_list.append([error01_train/60000, error01_test/10000])
         print("0/1 error of testing set: ", error01_test, "/", len(test_data[1]))
