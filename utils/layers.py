@@ -1,5 +1,5 @@
 import numpy as np
-import sys
+from utils.util import *
 import scipy.signal
 
 class Convolution:
@@ -171,53 +171,107 @@ class FullyConnected:
         self.bias -= lr * self.db
         return self.dx
 
+
 class Maxpooling:
-        """MAX_POOL_LAYER only reduce dimensions of height and width by a factor.
-           It does not put max filter on same input twice i.e. stride = factor = kernel_dimension
-        """
+    def __init__(self, size, stride=1, pad=0, name="pool"):
+        self.par = None
+        self.pool_h = size
+        self.pool_w = size
+        self.stride = stride
+        self.pad = pad
+        self.name = name
 
-        def __init__(self, size, stride, name):
-            self.size = size
-            self.factor = stride
-            self.name = name
+        self.x = None
+        self.arg_max = None
 
-        def forward(self, X):
-            """
-            Computes the forward pass of MaxPool Layer.
-            Input:
-                X: Input data of shape (N, D, H, W)
-            where, N = batch_size or number of images
-                   H, W = Height and Width of input layer
-                   D = Depth of input layer
-            """
-            factor = self.factor
-            N, D, H, W = X.shape
-            self.cache = X
-            self.out = X.reshape(N, D, H // factor, factor, W // factor, factor).max(axis=(3, 5))
-            assert self.out.shape == (N, D, H//factor, W//factor)
-            return self.out
+    def forward(self, x):
+        N, C, H, W = x.shape
+        out_h = int(1 + (H - self.pool_h) / self.stride)
+        out_w = int(1 + (W - self.pool_w) / self.stride)
 
-        def backward(self, dy, lr):
-            """
-            Computes the backward pass of MaxPool Layer.
-            Input:
-                dy: delta values of shape (N, D, H/factor, W/factor)
-            """
-            X = self.cache
-            if len(dy.shape) != 4:  # then it must be 2
-                assert dy.shape[0] == X.shape[0]
+        col = im2col(x, self.pool_h, self.pool_w, self.stride, self.pad)
+        col = col.reshape(-1, self.pool_h*self.pool_w)
 
-                delta = dy.reshape(self.out.shape)
+        arg_max = np.argmax(col, axis=1)
+        out = np.max(col, axis=1)
+        out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)
 
-            fmap = np.repeat(np.repeat(self.out, self.factor, axis=2), self.factor, axis=3)
-            dmap = np.repeat(np.repeat(dy, self.factor, axis=2), self.factor, axis=3)
-            assert fmap.shape == X.shape and dmap.shape == X.shape
+        self.x = x
+        self.arg_max = arg_max
 
-            self.dx = np.zeros(X.shape)
-            self.dx = (fmap == X) * dmap
+        return out
 
-            assert self.dx.shape == X.shape
-            return self.dx
+    def backward(self, dout, lr):
+        dout = dout.transpose(0, 2, 3, 1)
+
+        pool_size = self.pool_h * self.pool_w
+        dmax = np.zeros((dout.size, pool_size))
+        dmax[np.arange(self.arg_max.size),
+             self.arg_max.flatten()] = dout.flatten()
+        dmax = dmax.reshape(dout.shape + (pool_size,))
+
+        dcol = dmax.reshape(dmax.shape[0] * dmax.shape[1] * dmax.shape[2], -1)
+        dx = col2im(dcol, self.x.shape, self.pool_h,
+                    self.pool_w, self.stride, self.pad)
+
+        return dx
+# class Maxpooling:
+#         """MAX_POOL_LAYER only reduce dimensions of height and width by a factor.
+#            It does not put max filter on same input twice i.e. stride = factor = kernel_dimension
+#         """
+#
+#         def __init__(self, size, stride, name):
+#             self.size = size
+#             self.factor = stride
+#             self.name = name
+#
+#         def forward(self, X):
+#             """
+#             Computes the forward pass of MaxPool Layer.
+#             Input:
+#                 X: Input data of shape (N, D, H, W)
+#             where, N = batch_size or number of images
+#                    H, W = Height and Width of input layer
+#                    D = Depth of input layer
+#             """
+#             factor = self.factor
+#             # N, D, H, W = X.shape
+#             # self.cache = X
+#             # self.out = X.reshape(N, D, H // factor, factor, W // factor, factor).max(axis=(3, 5))
+#             # assert self.out.shape == (N, D, H//factor, W//factor)
+#             n, d, h, w = X.shape
+#             x_grid = X.reshape(n, d, h // factor, factor, w // factor, factor)
+#             out = np.max(x_grid, axis=(3, 5))
+#             self.mask = (out.reshape(n, d, h // factor, 1, w // factor, 1) == x_grid)
+#             return out
+#             return self.out
+#
+#
+#         def backward(self, dy, lr):
+#             """
+#             Computes the backward pass of MaxPool Layer.
+#             Input:
+#                 dy: delta values of shape (N, D, H/factor, W/factor)
+#             """
+#
+#             n, c, h, w = dy.shape
+#             diff_grid = dy.reshape(n, c, h, 1, w, 1)
+#             return (diff_grid * self.mask).reshape(n, c, h * self.factor, w * self.factor)
+#             # X = self.cache
+#             # if len(dy.shape) != 4:  # then it must be 2
+#             #     assert dy.shape[0] == X.shape[0]
+#             #
+#             #     delta = dy.reshape(self.out.shape)
+#             #
+#             # fmap = np.repeat(np.repeat(self.out, self.factor, axis=2), self.factor, axis=3)
+#             # dmap = np.repeat(np.repeat(dy, self.factor, axis=2), self.factor, axis=3)
+#             # assert fmap.shape == X.shape and dmap.shape == X.shape
+#             #
+#             # self.dx = np.zeros(X.shape)
+#             # self.dx = (fmap == X) * dmap
+#             #
+#             # assert self.dx.shape == X.shape
+#             # return self.dx
 
 
 class ReLu:
@@ -233,7 +287,7 @@ class ReLu:
             X: Input data of any shape
         """
         self.cache = X
-        self.out = np.maximum(X, 0)
+        self.out = (X > 0) * X
         return self.out
 
     def backward(self, dy, lr):
@@ -242,7 +296,7 @@ class ReLu:
         Input:
             delta: Shape of delta values should be same as of X in cache
         """
-        self.dx = dy * (self.cache >= 0)
+        self.dx = dy * (self.cache > 0)
         return self.dx
 
 class Softmax:
@@ -265,6 +319,7 @@ class Softmax:
         self.cache = X
         dummy = np.exp(X)
         self.Y = dummy/np.sum(dummy, axis=1, keepdims=True)
+        # print(self.Y)
         return self.Y
 
     def backward(self, output, lr):

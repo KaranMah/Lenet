@@ -5,8 +5,8 @@ class Convol2d:
 
     def __init__(self, layer_size, kernel_size, name):
         self.depth, self.height, self.width = layer_size
-        self.weights = np.random.uniform(-0.1, 0.1, kernel_size)
-        self.bias = np.random.uniform(-0.1, 0.1, kernel_size[0])
+        self.weights = np.random.uniform(-0.01, 0.01, kernel_size)
+        self.bias = np.random.uniform(-0.01, 0.01, kernel_size[0])
         self.bias = np.mat(self.bias)
         self.name = name
         self.weight_diff = 0

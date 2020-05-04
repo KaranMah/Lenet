@@ -5,8 +5,11 @@ class Convol2d:
 
     def __init__(self, layer_size, kernel_size, name):
         self.depth, self.height, self.width = layer_size
-        self.weights = np.random.uniform(-0.1, 0.1, kernel_size)
-        self.bias = np.random.uniform(-0.1, 0.1, kernel_size[0])
+        f = np.sqrt(6) / np.sqrt(kernel_size[1] + layer_size[0])
+        print(f)
+        epsilon = 1e-6
+        self.weights = np.random.uniform(-f, f+epsilon, kernel_size)
+        self.bias = np.random.uniform(-f, f+epsilon, kernel_size[0])
         self.bias = np.mat(self.bias)
         self.name = name
         self.weight_diff = 0
@@ -17,6 +20,7 @@ class Convol2d:
 
         k = self.weights.shape[2]
         n, d, h, w = x.shape
+        self.cache = x
         x = x.reshape(n,h,w,d)
         self.x = x
         h_out = h - (k - 1)
@@ -33,47 +37,65 @@ class Convol2d:
                 output[:, i, j, :] = out.reshape(n, -1)
         # print(output.shape)
         output = output.reshape(n, w_n, h_out, w_out)
+
         return output
 
-    def backward(self, diff,lr):
-        n, c, h, w = diff.shape
-        diff = diff.reshape(n, h, w, c)
-        w_n = self.weights.shape[0]
-        w_o = self.weights.shape[1]
-        k = self.weights.shape[2]
-        h_in = h + (k - 1)
-        w_in = w + (k - 1)
+    def backward(self, dZ, lr):
 
-        weight_diff = np.zeros((k, k, w_o, w_n))
-        for i in range(k):
-            for j in range(k):
-                #inp = (n, 28, 28, c) => (n*28*28, c) => (c, n*28*28)
-                inp = self.x[:, i:i+h, j:j+w, :].reshape(-1, w_o).T
-                #diff = n, 28, 28, 6 => (n*28*28, 6)
-                diff_out = diff.reshape(-1, w_n)
-                # print(inp.shape,diff_out.shape)
-                weight_diff[i, j, :, :] = inp.dot(diff_out)
-        bias_diff = np.sum(diff, axis=(0, 1, 2))
 
-        pad = k - 1
-        diff_pad = np.pad(diff, ((0, 0), (pad, pad), (pad, pad), (0, 0)), 'constant')
-        rotated_weight = self.weights[::-1, ::-1, :, :].transpose(0, 1, 3, 2).reshape(-1, w_o)
-        back_diff = np.zeros((n, h_in, w_in, w_o))
-        for i in range(h_in):
-            for j in range(w_in):
-                diff_out = diff_pad[:, i:i+k, j:j+k, :].reshape(n, -1)
-                out = diff_out.dot(rotated_weight)
-                back_diff[:, i, j, :] = out.reshape(n, -1)
+        ### START CODE HERE ###
+        # Retrieve information from "cache"
+        A_prev = self.cache
 
-        # weight_diff, bias_diff = self.sgd_momentum(weight_diff, bias_diff)
-        self.weights -= lr * weight_diff.T.reshape(self.weights.shape)
-        self.bias -= lr * bias_diff
-        n, h, w, d = self.x.shape
-        back_diff = back_diff.reshape(n, d, h, w)
+        # Retrieve dimensions from A_prev's shape
+        (m, n_H_prev, n_W_prev, n_C_prev) = A_prev.shape
 
-        return back_diff
+        # Retrieve dimensions from W's shape
+        (n_C, w_m, f, f) = self.weights.shape
 
-    def sgd_momentum(self, weight_diff, bias_diff):
-        self.weight_diff = self.momentum * self.weight_diff + (1 - self.momentum) * weight_diff
-        self.bias_diff = self.momentum * self.bias_diff + (1 - self.momentum) * bias_diff
-        return self.weight_diff, self.bias_diff
+
+        # Retrieve dimensions from dZ's shape
+        (m, n_C, n_H, n_W) = dZ.shape
+
+        # Initialize dA_prev, dW, db with the correct shapes
+        dA_prev = np.zeros(A_prev.shape)
+        dW = np.zeros(self.weights.shape)
+        db = np.zeros(self.bias.shape)
+
+        for i in range(m):  # loop over the training examples
+
+            # select ith training example from A_prev_pad and dA_prev_pad
+            a_prev = A_prev[i, :, :, :]
+            da_prev = dA_prev[i, :, :, :]
+            # print(a_prev.shape, A_prev.shape, da_prev.shape, dA_prev.shape)
+
+            for h in range(n_H):  # loop over vertical axis of the output volume
+                for w in range(n_W):  # loop over horizontal axis of the output volume
+                    for c in range(n_C):  # loop over the channels of the output volume
+
+                        # Find the corners of the current "slice"
+                        vert_start = h
+                        vert_end = vert_start + f
+                        horiz_start = w
+                        horiz_end = horiz_start + f
+
+                        # Use the corners to define the slice from a_prev_pad
+                        a_slice = a_prev[:, vert_start: vert_end, horiz_start: horiz_end]
+                        # print(db.shape,dW.shape)
+                        print(da_prev[:, vert_start:vert_end, horiz_start:horiz_end].shape, self.weights[i, :, :, :].shape, dZ.shape)
+                        # Update gradients for the window and the filter's parameters using the code formulas given above
+                        da_prev[:, vert_start:vert_end, horiz_start:horiz_end] += self.weights[i, :, :, :] * dZ[i, c, h, w]
+                        dW[i, :, :, :] += a_slice * dZ[i, c, h, w]
+                        db += dZ[i, c, h, w]
+
+            # Set the ith training example's dA_prev to the unpaded da_prev_pad (Hint: use X[pad:-pad, pad:-pad, :])
+            dA_prev[i, :, :, :] = da_prev[:,:,:]
+        ### END CODE HERE ###
+
+        # Making sure your output shape is correct
+        assert (dA_prev.shape == (m, n_H_prev, n_W_prev, n_C_prev))
+
+        self.weights -= lr*dW
+        self.bias -= lr*db
+
+        return dA_prev
