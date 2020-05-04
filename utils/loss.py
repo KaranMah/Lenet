@@ -1,14 +1,11 @@
 import numpy as np
 def cross_entropy(probs,y_true):
-    y_true = np.eye(10)[y_true]
-    true_vals = np.squeeze(y_true)
-    # print(y_true.shape, true_vals.shape)
-
-    label = np.argmax(probs, axis=1)
-    # print(label)
+    true_vals = np.squeeze(np.eye(10)[y_true])
+    # label = np.argmax(probs, axis=1)
     entropy = -np.sum(true_vals * np.log(probs))
-    accuracy = np.sum(y_true == label) *100/ float(len(label))
-    # print(entropy, accuracy*100)
+    res = np.argmax(probs, axis=1)
+    accuracy = 1 - (np.count_nonzero((res - y_true)) / len(y_true))
+    # print(accuracy)
     return (entropy)
 
     # # Y = np.eye(10)[y]

@@ -5,9 +5,9 @@ class conv:
         self.strid = strid
         self.pading = pading
         self.par = dict()
-        w = 0.01 * np.random.randn(cout, cin, filtersize, filtersize)
+        w = np.random.uniform(-0.1, 0.1, (cout, cin, filtersize, filtersize))
         self.par['w'] = w
-        b = np.zeros(cout)
+        b = np.random.uniform(-0.1, 0.1, cout)
         self.par['b'] = b
         self.gra = dict()
         self.gra['w'] = None
@@ -46,6 +46,7 @@ class conv:
         dcol = np.dot(dout, self.col_W.T)
         # print(dcol.shape)
         dx = col2im(dcol, self.x.shape, FH, FW, self.strid, self.pading)
+        # print(self.name, "bias", self.gra['b'])
         self.par['b'] -= lr * self.gra['b']
         self.par['w'] -= lr * self.gra['w']
 

@@ -59,7 +59,9 @@ class LeNet5(object):
             batch_image = batch_image.reshape(N, D, H, W)
             for layer in self.layers:
                 batch_image = layer.forward(batch_image)
-            return batch_image
+            res = np.argmax(batch_image, axis=1)
+            loss = cross_entropy(batch_image, batch_label)
+            return loss, res
 
     def Back_Propagation(self, lr):
         rev_layers = reversed(self.layers)

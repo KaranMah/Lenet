@@ -169,6 +169,7 @@ class FullyConnected:
         self.db = np.sum(dy, axis=0)
         self.weights -= np.squeeze(lr * self.dw)
         self.bias -= lr * self.db
+        # print(self.name, self.dw, self.db)
         return self.dx
 
 
