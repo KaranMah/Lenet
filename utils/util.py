@@ -1,5 +1,9 @@
 import numpy as np
 
+def cross_entropy(probs,y_true):
+    true_vals = np.squeeze(np.eye(10)[y_true])
+    entropy = -np.sum(true_vals * np.log(probs))
+    return (entropy)
 
 def im2col(input_data, filter_h, filter_w, stride=1, pad=0):
     """
@@ -52,7 +56,6 @@ def col2im(col, input_shape, filter_h, filter_w, stride=1, pad=0):
                       filter_w).transpose(0, 3, 4, 5, 1, 2)
 
     img = np.zeros((N, C, H + 2*pad + stride - 1, W + 2*pad + stride - 1))
-    # print(col.shape, input_shape, out_h, img.shape)
 
     for y in range(filter_h):
         y_max = y + stride*out_h
