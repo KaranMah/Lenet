@@ -1,6 +1,4 @@
-import numpy as np
 from utils.util import *
-import scipy.signal
 
 class conv:
     def __init__(self, cin, cout, filtersize, name, strid=1, pading=0):
