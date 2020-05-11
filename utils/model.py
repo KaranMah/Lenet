@@ -21,16 +21,15 @@ class LeNet5(object):
     def Forward_Propagation(self,batch_image, batch_label, mode):
 
         if mode == "train":
-            N,W,H,D =(batch_image.shape)
-            batch_image = batch_image.reshape(N,D,H,W)
+            N,W,H,C =(batch_image.shape)
+            batch_image = batch_image.reshape(N,C,H,W)
             for layer in self.layers:
                 batch_image = layer.forward(batch_image)
             self.final = np.eye(10)[batch_label]
             return cross_entropy(batch_image, batch_label)
         else:
-            N, W, H, D = (batch_image.shape)
-            batch_image = batch_image\
-                .reshape(N, D, H, W)
+            N, W, H, C = (batch_image.shape)
+            batch_image = batch_image.reshape(N, C, H, W)
             for layer in self.layers:
                 batch_image = layer.forward(batch_image)
             res = np.argmax(batch_image, axis=1)

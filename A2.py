@@ -135,6 +135,8 @@ def train(model, train_data, test_data, num_epoch, lr_global_list, batch_size):
         # For your implementation
         error01_train = 0
         error01_test = 0
+
+        # split into smaller sets to overcome memory errors.
         for i in range(10):
             error1_train, _ = model.Forward_Propagation(
                 train_data[0][int((i / 10) * len(train_data[0])):int((i + 1) / 10*len(train_data[0]))],

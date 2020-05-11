@@ -12,6 +12,7 @@ def im2col(input_data, filter_h, filter_w, stride=1):
 
     col = np.zeros((N, C, filter_h, filter_w, out_h, out_w))
 
+    # convert a w*h matrix into a column vector for dot products
     for y in range(filter_h):
         y_max = y + stride*out_h
         for x in range(filter_w):
@@ -31,10 +32,11 @@ def col2im(col, input_shape, filter_h, filter_w, stride=1):
 
     img = np.zeros((N, C, H + stride - 1, W + stride - 1))
 
+    # convert column back to matrix to represent image
     for y in range(filter_h):
         y_max = y + stride*out_h
         for x in range(filter_w):
             x_max = x + stride*out_w
             img[:, :, y:y_max:stride, x:x_max:stride] += col[:, :, y, x, :, :]
 
-    return img[:, :, 0:H, 0:W]
+    return img[:, :, :H, :W]
